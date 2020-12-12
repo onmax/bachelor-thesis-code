@@ -127,3 +127,15 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+/.vscode
+TODO.md
+
+data/raw
+data/files/2014
+data/files/2015
+data/files/2016
+data/files/2017
+data/files/2018
+data/files/2019
+*.pickle
