@@ -136,3 +136,5 @@ data/files/
 *.pickle
 
 /data/*.csv
+
+src/models/logs
