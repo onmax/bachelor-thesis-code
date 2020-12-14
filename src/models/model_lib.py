@@ -1,6 +1,6 @@
 import tensorflow as tf
 from livelossplot import PlotLossesKeras
-import datetime
+from datetime import datetime
 
 MAX_EPOCHS = 100
 
@@ -18,17 +18,15 @@ def compile_and_fit(model, window, patience=10, max_epochs=MAX_EPOCHS, should_st
         optimizer=optimizer,
         metrics=[tf.metrics.MeanAbsoluteError(), tf.metrics.RootMeanSquaredError()])
 
-    cbs = [PlotLossesKeras] + [early_stopping] if should_stop else []
+    cbs = [PlotLossesKeras()] + ([early_stopping] if should_stop else [])
     if tensorboard:
-        log_dir = "logs/fit/" + datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        tensorboard = tf.keras.callbacks.TensorBoard(
-            log_dir=log_dir, histogram_freq=1)
-        cbs.append(tensorboard)
+        log_dir = "logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
+        cbs += [tf.keras.callbacks.TensorBoard(
+            log_dir=log_dir, histogram_freq=1)]
     history = model.fit(window.train, epochs=max_epochs,
                         validation_data=window.val,
                         callbacks=cbs,
-                        verbose=1,
-                        steps_per_epoch=100)
+                        verbose=2)
 
     # window.plot(model)
 
