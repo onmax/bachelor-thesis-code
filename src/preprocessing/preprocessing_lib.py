@@ -4,10 +4,10 @@ import pandas as pd
 
 def path():
     current_path = os.getcwd()
-    return f"{current_path}/../../data"
+    return f"{current_path}/../../data/files"
 
 
-def data_path(year):
+def path_data_for_year(year):
     return f"{path()}/{year}"
 
 
@@ -15,8 +15,8 @@ def get_csvs(years):
     current_path = path()
     paths = []
     for year in years:
-        pickle_path = f"{current_path}/{year}/trips-{year}.csv"
-        paths.append(pickle_path)
+        csv_path = f"{current_path}/{year}/trips-{year}.csv"
+        paths.append(csv_path)
     return paths
 
 
@@ -41,6 +41,33 @@ def merge_years(inputs):
         df = pd.concat([df, df_temp], join='outer')
     df['start_time'] = df['start_time'].combine_first(df['starttime'])
     df = df.drop(columns=["starttime"])
+    return df
+
+
+def group_by_time_n_quantity(df):
+    df["start_time"] = pd.to_datetime(
+        df["start_time"], format='%Y-%m-%d %H:%M:%S')
+    INTERVAL = "1H"  # It could be also 15Min
+    df = df.groupby('from_station_id').resample(INTERVAL, on='start_time') \
+        .size() \
+        .to_frame() \
+        .rename(columns={0: "quantity"}) \
+        .reset_index() \
+        .set_index("start_time")
+    return df
+
+
+def multiple_columns(df):
+    df["quantity_index"] = "quantity_" + df["from_station_id"].astype("str")
+    df = df.drop(columns=["from_station_id"])
+    df = df.pivot(columns='quantity_index', values='quantity')
+    df.columns.name = None
+    return df.fillna(0)
+
+
+def nn_format(df):
+    df = group_by_time_n_quantity(df)
+    df = multiple_columns(df)
     return df
 
 
