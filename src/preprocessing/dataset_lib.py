@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+from os.path import join
 import pandas as pd
 
 import os
@@ -29,10 +30,12 @@ SIMILAR_STATIONS = [
     {"place": "Dearborn St & Adams St", "id": 37},
     # {"place": "Clark St & Ida B Wells Dr", "id": 50},
     # {"place": "Dearborn St & Monroe St", "id": 49},
-    {"place": "LaSalle St & Washington St", "id": 98},
+    # {"place": "LaSalle St & Washington St", "id": 98},
     # {"place": "Dearborn St & Van Buren St", "id": 624},
-    {"place": "State St & Van Buren St", "id": 33},
+    # {"place": "State St & Van Buren St", "id": 33},
 ]
+
+SELECTED_STATIONS = SIMILAR_STATIONS
 
 
 def load_dataset():
@@ -40,23 +43,23 @@ def load_dataset():
     df["start_time"] = pd.to_datetime(
         df["start_time"], format='%Y-%m-%d %H:%M:%S')
     df = df.reset_index(drop=True).set_index("start_time")
-
-    # Select only a few of them
-    print(f"Loading only stations with the following id: {SELECTED_STATIONS}")
-    df = df[df['from_station_id'].isin([s["id"] for s in SELECTED_STATIONS])]
     return df
 
 
 def transform_time(df):
     df['hour'] = df.index.hour + 1  # 1 to 24
-    df['day_of_month'] = df.index.day
+    # df['day_of_month'] = df.index.day
     df['day_of_week'] = df.index.dayofweek + 1  # 1 to 7
     df['month'] = df.index.month
-    df['year'] = df.index.year
+    # df['year'] = df.index.year
     return df
 
 
 def split_dataset(df, train_from=datetime(2014, 1, 1)):
+    # Select only a few of them
+    print(f"Loading only stations with the following id: {SELECTED_STATIONS}")
+    df = df[df['from_station_id'].isin([s["id"] for s in SELECTED_STATIONS])]
+
     split_date = datetime(2018, 12, 31, 23, 59, 59)
     train_df = df[(df.index >= train_from) & (df.index <= split_date)]
     train_df = train_df.sort_values(by="start_time")
