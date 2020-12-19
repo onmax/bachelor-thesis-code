@@ -107,7 +107,7 @@ def join(output_file, parts):
 
 def load_parts():
     parts = [
-        f"{path()}/parts/chicago-divvy-trips-part-{i}" for i in list(range(1, 15))]
+        f"{path()}/../parts/chicago-divvy-trips-part-{i}" for i in list(range(1, 4))]
     output_file = f'{path()}/trips.csv'
     join(output_file, parts)
     df = pd.read_csv(output_file)

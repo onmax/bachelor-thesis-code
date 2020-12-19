@@ -1,15 +1,13 @@
 import tensorflow as tf
 from livelossplot import PlotLossesKeras
 from datetime import datetime
-import os
-import inspect
 import sys
 
 
-os.path.dirname(os.path.abspath(
-    inspect.getfile(inspect.currentframe()))) + "../graphs/"
-sys.path.insert(1, os.path.join(sys.path[0], '../graphs'))
+sys.path.insert(1, '../preprocessing/')
+sys.path.insert(1, '../graphs')
 if True:
+    from dataset_lib import load_dataset, split_dataset
     from predictions import plot_predictions
 
 MAX_EPOCHS = 100
@@ -39,4 +37,12 @@ def compile_and_fit(model, window, patience=10, max_epochs=MAX_EPOCHS, should_st
                         verbose=2)
 
     plot_predictions(window, model, 10)
-    return history
+    return model
+
+
+def get_datasets():
+    df = load_dataset()
+    train_df, val_df = split_dataset(df, train_from=datetime(2018, 1, 1))
+    print(f"Training on {train_df.columns.to_list()}")
+    print(f"Validating on {val_df.columns.to_list()}")
+    return train_df, val_df

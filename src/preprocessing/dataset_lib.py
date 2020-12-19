@@ -47,7 +47,7 @@ def load_dataset():
 
 
 def transform_time(df):
-    df['hour'] = df.index.hour + 1  # 1 to 24
+    df['hour'] = df.index.hour  # 0 to 23
     # df['day_of_month'] = df.index.day
     df['day_of_week'] = df.index.dayofweek + 1  # 1 to 7
     df['month'] = df.index.month
@@ -58,7 +58,7 @@ def transform_time(df):
 def split_dataset(df, train_from=datetime(2014, 1, 1)):
     # Select only a few of them
     print(f"Loading only stations with the following id: {SELECTED_STATIONS}")
-    df = df[df['from_station_id'].isin([s["id"] for s in SELECTED_STATIONS])]
+    df = df[[f"quantity_{s['id']}" for s in SELECTED_STATIONS]]
 
     split_date = datetime(2018, 12, 31, 23, 59, 59)
     train_df = df[(df.index >= train_from) & (df.index <= split_date)]

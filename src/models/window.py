@@ -5,7 +5,7 @@ import numpy as np
 class WindowGenerator():
     def __init__(self, input_width, label_width, shift,
                  train_df, val_df, test_df=None,
-                 label_columns=["quantity"], identifier_label="from_station_id"):
+                 label_columns_index=-3, identifier_label="from_station_id"):
 
         # Store the raw data.
         self.train_df = train_df
@@ -13,7 +13,10 @@ class WindowGenerator():
         self.test_df = test_df
 
         # Work out the label column indices.
-        self.label_columns = label_columns
+        self.label_columns_index = label_columns_index
+        self.label_columns = train_df.columns[:label_columns_index].tolist()
+        self.label_columns_indices = {name: i for i, name in
+                                      enumerate(self.label_columns)}
 
         self.column_indices = {name: i for i, name in
                                enumerate(train_df.columns)}
@@ -42,41 +45,40 @@ class WindowGenerator():
             f'Label indices: {self.label_indices}',
             f'Label column name(s): {self.label_columns}'])
 
-    # def split_window(self, features):
-    #     inputs = features[:, self.input_slice, :]
-    #     labels = features[:, self.labels_slice, :]
-    #     labels = tf.stack(
-    #         [labels[:, :, self.column_indices[name]]
-    #             for name in self.label_columns],
-    #         axis=-1)
+    def split_window(self, features):
+        inputs = features[:, self.input_slice, :]
+        labels = features[:, self.labels_slice, :]
 
-    #     # Slicing doesn't preserve static shape information, so set the shapes
-    #     # manually. This way the `tf.data.Datasets` are easier to inspect.
-    #     inputs.set_shape([None, self.input_width, None])
-    #     labels.set_shape([None, self.label_width, None])
+        if self.label_columns is not None:
+            labels = tf.stack(
+                [labels[:, :, self.column_indices[name]]
+                    for name in self.label_columns],
+                axis=-1)
 
-    #     return inputs, labels
+        # Slicing doesn't preserve static shape information, so set the shapes
+        # manually. This way the `tf.data.Datasets` are easier to inspect.
+        inputs.set_shape([None, self.input_width, None])
+        labels.set_shape([None, self.label_width, None])
+
+        return inputs, labels
 
     def make_dataset(self, data):
         if data is None:
             print("Data is None")
             return
 
-        dss = np.array([])
+        data = np.array(data, dtype=np.float32)
+        ds = tf.keras.preprocessing.timeseries_dataset_from_array(
+            data=data,
+            targets=None,
+            sequence_length=self.total_window_size,
+            sequence_stride=1,
+            shuffle=True,
+            batch_size=64,)
 
-        for id in data[self.identifier_label].unique():
-            id_data = data[data[self.identifier_label] == id]
-            ds = tf.keras.preprocessing.timeseries_dataset_from_array(
-                data=id_data.drop(
-                    columns=self.label_columns).astype(np.float32),
-                targets=id_data[self.label_columns].astype(np.float32),
-                sequence_length=self.total_window_size,
-                sequence_stride=1,
-                shuffle=True,
-                # batch_size=32,
-            )
-            dss = np.append(ds, dss)
-        return dss
+        ds = ds.map(self.split_window)
+
+        return ds
 
     @property
     def train(self):
