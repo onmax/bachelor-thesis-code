@@ -38,8 +38,8 @@ SIMILAR_STATIONS = [
 SELECTED_STATIONS = SIMILAR_STATIONS
 
 
-def load_dataset():
-    df = load_parts()
+def load_dataset(base_path=""):
+    df = load_parts(base_path)
     df["start_time"] = pd.to_datetime(
         df["start_time"], format='%Y-%m-%d %H:%M:%S')
     df = df.reset_index(drop=True).set_index("start_time")
@@ -57,8 +57,8 @@ def transform_time(df):
 
 def split_dataset(df, train_from=datetime(2014, 1, 1)):
     # Select only a few of them
-    print(f"Loading only stations with the following id: {SELECTED_STATIONS}")
-    df = df[[f"quantity_{s['id']}" for s in SELECTED_STATIONS]]
+    # print(f"Loading only stations with the following id: {SELECTED_STATIONS}")
+    # df = df[[f"quantity_{s['id']}" for s in SELECTED_STATIONS]]
 
     split_date = datetime(2018, 12, 31, 23, 59, 59)
     train_df = df[(df.index >= train_from) & (df.index <= split_date)]

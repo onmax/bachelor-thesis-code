@@ -2,9 +2,9 @@ import os
 import pandas as pd
 
 
-def path():
+def path(base_path=""):
     current_path = os.getcwd()
-    return f"{current_path}/../../data/files"
+    return f"{current_path}{base_path}/../../data/files"
 
 
 def path_data_for_year(year):
@@ -105,10 +105,10 @@ def join(output_file, parts):
                 output.write(input_file.read())
 
 
-def load_parts():
+def load_parts(base_path=""):
     parts = [
-        f"{path()}/../parts/chicago-divvy-trips-part-{i}" for i in list(range(1, 4))]
-    output_file = f'{path()}/trips.csv'
+        f"{path(base_path)}/../parts/chicago-divvy-trips-part-{i}" for i in list(range(1, 4))]
+    output_file = f'{path(base_path)}/trips.csv'
     join(output_file, parts)
     df = pd.read_csv(output_file)
     return df

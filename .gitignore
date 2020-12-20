@@ -137,4 +137,4 @@ data/files/
 
 /data/*.csv
 
-src/models/logs
+logs/
