@@ -11,26 +11,27 @@ if True:
 MAX_EPOCHS = 100
 
 
-def compile_and_fit(model, window, patience=10, max_epochs=MAX_EPOCHS, should_stop=False, lr=0.001, optimizer=tf.optimizers.Adam(lr=0.001), tensorboard=False, with_lr_schedule=False):
+def rmsle(y_true, y_pred):
+    msle = tf.keras.losses.MeanSquaredLogarithmicError()
+    return tf.keras.backend.sqrt(msle(y_true, y_pred))
+
+
+def compile_and_fit(model, window, patience=10, max_epochs=MAX_EPOCHS, should_stop=False, lr=0.001, optimizer=tf.optimizers.Adam(lr=0.001), tensorboard=False, lr_schedule_fn=None):
     early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss',
                                                       patience=patience,
                                                       mode='min')
-    if with_lr_schedule:
-        lr = 1e-6
-
-    lr_schedule = tf.keras.callbacks.LearningRateScheduler(
-        lambda epoch: 1e-6 * 10**(epoch/10))
     if optimizer is None:
         optimizer = tf.optimizers.Adam(lr=lr)
 
     model.compile(
         loss=tf.losses.Huber(),
         optimizer=optimizer,
-        metrics=[tf.losses.MeanSquaredLogarithmicError(), tf.losses.MeanSquaredError(), tf.metrics.MeanAbsoluteError(), tf.metrics.RootMeanSquaredError()])
+        metrics=[tf.losses.MeanSquaredLogarithmicError(), tf.losses.MeanSquaredError(), tf.metrics.MeanAbsoluteError(), tf.metrics.RootMeanSquaredError(), rmsle])
 
     cbs = [PlotLossesKeras()] + \
         ([early_stopping] if should_stop else []) + \
-        ([lr_schedule] if with_lr_schedule else [])
+        ([tf.keras.callbacks.LearningRateScheduler(lr_schedule_fn)]
+         if lr_schedule_fn is not None else [])
     if tensorboard:
         log_dir = "logs/fit/" + datetime.now().strftime("%Y%m%d-%H%M%S")
         cbs += [tf.keras.callbacks.TensorBoard(

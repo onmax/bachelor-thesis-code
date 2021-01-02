@@ -5,7 +5,7 @@ import numpy as np
 class WindowGenerator():
     def __init__(self, input_width, label_width, shift,
                  train_df, val_df, test_df=None,
-                 label_columns_index=-3, identifier_label="from_station_id"):
+                 label_columns_index=-3):
 
         # Store the raw data.
         self.train_df = train_df
@@ -36,7 +36,6 @@ class WindowGenerator():
         self.labels_slice = slice(self.label_start, None)
         self.label_indices = np.arange(self.total_window_size)[
             self.labels_slice]
-        self.identifier_label = identifier_label
 
     def __repr__(self):
         return '\n'.join([

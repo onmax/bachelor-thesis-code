@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import random
+import pandas as pd
 
 
 def plot_predictions(window, model=None, max_subplots=5):
@@ -35,3 +36,21 @@ def plot_predictions(window, model=None, max_subplots=5):
     plt.legend()
     plt.xlabel('Time [h]')
     plt.show()
+
+
+def convert_to_big_station(df):
+    quantity_columns = df.columns.difference(["hour", "day_of_week", "month"])
+    df['quantity'] = df[quantity_columns].sum(axis=1)
+    df = df.resample(pd.Timedelta('1 days')).sum()
+    return df
+
+
+def plot_stations(df):
+    df = convert_to_big_station(df)
+    plt.plot(df.index, df["quantity"])
+
+def plot_predictions(y, y_hat):
+    big_y = convert_to_big_station(y)
+    big_y_hat = convert_to_big_station(y_hat)
+    plt.plot(big_y.index, big_y["quantity"])
+    plt.plot(big_y_hat.index, big_y_hat["quantity"])

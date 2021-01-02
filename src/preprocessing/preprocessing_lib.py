@@ -33,14 +33,15 @@ def merge_csv(inputs, output, year, cols):
     df[cols].to_csv(output_file, index=False)
 
 
-def merge_years(inputs):
+def merge_years(inputs, with_starttime=True):
     df = pd.DataFrame()
     for input in inputs:
         print(f"Reading {input}")
         df_temp = pd.read_csv(input)
         df = pd.concat([df, df_temp], join='outer')
-    df['start_time'] = df['start_time'].combine_first(df['starttime'])
-    df = df.drop(columns=["starttime"])
+    if with_starttime:
+        df['start_time'] = df['start_time'].combine_first(df['starttime'])
+        df = df.drop(columns=["starttime"])
     return df
 
 
