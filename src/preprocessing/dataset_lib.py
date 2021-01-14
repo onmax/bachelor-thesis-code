@@ -100,17 +100,18 @@ def divide_X_Y(df):
 
 
 def remove_first_day(df):
-    df = df[df.index >= df.index.min().date()+pd.offsets.Day(1)]
+    df = df[df.index >= df.index.min().date()+pd.offsets.Day(7)]
     return df
 
 
 def shift(df):
     q_columns = df.columns.drop(["hour", 'day_of_week', 'month'])
-    df_shifted = df[q_columns].shift(1, freq='D')
+    df_shifted = df[q_columns].shift(7, freq='D')
     df_shifted.drop(df_shifted[df_shifted.index >= df_shifted.index.max().date()-pd.offsets.Day(0)].index, inplace=True)
     df_shifted = df_shifted[df_shifted.index >= df_shifted.index.min().date()+pd.offsets.Day(0)]
     df = remove_first_day(df)
     df_final = df[["hour", "day_of_week", "month"]].join(df_shifted, how="right")
+    df_final = df_final.dropna(0)
     df_final["start_time"] = df.index
     df_final = df_final.reset_index(drop=True).set_index("start_time")
     return df_final

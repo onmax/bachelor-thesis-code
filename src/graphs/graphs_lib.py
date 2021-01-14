@@ -1,6 +1,12 @@
-import matplotlib.pyplot as plt
 import random
 import pandas as pd
+import matplotlib.pyplot as plt
+plt.style.reload_library()
+plt.style.use(['science'])
+plt.rcParams['figure.figsize'] = 16, 9
+plt.rcParams['xtick.labelsize'] = 18
+plt.rcParams['ytick.labelsize'] = 18
+plt.rcParams['font.size'] = 22
 
 
 def plot_predictions(window, model=None, max_subplots=5):
@@ -49,8 +55,9 @@ def plot_stations(df):
     df = convert_to_big_station(df)
     plt.plot(df.index, df["quantity"])
 
-def plot_predictions(y, y_hat):
+def plot_predictions(y, y_hat, filename):
     big_y = convert_to_big_station(y)
     big_y_hat = convert_to_big_station(y_hat)
     plt.plot(big_y.index, big_y["quantity"])
     plt.plot(big_y_hat.index, big_y_hat["quantity"])
+    plt.savefig(f"../results/{filename}")
