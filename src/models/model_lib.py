@@ -1,3 +1,5 @@
+from tensorflow.python.keras.backend import dtype
+from window import WindowGenerator
 import tensorflow as tf
 import pandas as pd
 from livelossplot import PlotLossesKeras
@@ -7,7 +9,6 @@ from tensorflow.keras.layers import Reshape, Dense, Dropout, Lambda, LSTM, RNN, 
 import tensorflow_probability as tfp
 tfpl = tfp.layers
 tfb = tfp.bijectors
-from window import WindowGenerator
 
 
 sys.path.insert(1, '../preprocessing/')
@@ -30,6 +31,7 @@ def compile_and_fit(model, window, patience=10, max_epochs=MAX_EPOCHS, should_st
         optimizer = tf.optimizers.Adam(lr=lr)
 
     model.compile(
+         run_eagerly=True,
         loss=tf.losses.Huber(),
         optimizer=optimizer,
         metrics=[tf.losses.MeanSquaredLogarithmicError(), tf.losses.MeanSquaredError(), tf.metrics.MeanAbsoluteError(), tf.metrics.RootMeanSquaredError(), rmsle])
@@ -67,7 +69,7 @@ def get_metrics(model, window):
     return metrics
 
 
-def model_generator(model_name, lr, n_features=633, relations=[(3, 1), (5, 1), (8, 1), (8, 3), (8, 5), (12, 1), (12, 3), (12, 5), (24, 1), (24, 3), (24, 5)]):
+def model_generator(model_name, lr, n_features=633, max_epochs=150, relations=[(3, 1), (5, 1), (8, 1), (8, 3), (8, 5), (12, 1), (12, 3), (12, 5), (24, 1), (24, 3), (24, 5)]):
     df = load_dataset("")
     train_df, val_df, test_df = split_dataset(df)
 
@@ -75,9 +77,9 @@ def model_generator(model_name, lr, n_features=633, relations=[(3, 1), (5, 1), (
         tf.keras.backend.clear_session()
         input_width, OUT_STEPS = r
         window = WindowGenerator(input_width=input_width,
-                                    label_width=OUT_STEPS,
-                                    shift=OUT_STEPS,
-                                    train_df=train_df, val_df=val_df, test_df=test_df)
+                                 label_width=OUT_STEPS,
+                                 shift=OUT_STEPS,
+                                 train_df=train_df, val_df=val_df, test_df=test_df)
 
         if(model_name == "dense"):
             model = get_dense_model(OUT_STEPS, n_features)
@@ -87,9 +89,12 @@ def model_generator(model_name, lr, n_features=633, relations=[(3, 1), (5, 1), (
             model = get_simple_lstm_model(OUT_STEPS, n_features)
         elif(model_name == "autoregressive"):
             model = get_feedback(OUT_STEPS, n_features)
-        history = compile_and_fit(model, window, lr=lr, should_stop=True, max_epochs=150, tensorboard=True)
+        history = compile_and_fit(
+            model, window, lr=lr, should_stop=True, max_epochs=max_epochs, tensorboard=True)
         metrics = get_metrics(model, window)
-        metrics.to_csv(f"../../results/{model_name}/{model_name}-{input_width}-{OUT_STEPS}.csv")
+        metrics.to_csv(
+            f"../../results/{model_name}/{model_name}-{input_width}-{OUT_STEPS}.csv")
+
 
 def get_dense_model(OUT_STEPS, n_features):
     if OUT_STEPS == 1:
@@ -104,9 +109,10 @@ def get_dense_model(OUT_STEPS, n_features):
             Dense(128, activation="relu"),
             Dropout(0.3),
             Dense(OUT_STEPS*n_features,
-                          kernel_initializer=tf.initializers.zeros),
+                  kernel_initializer=tf.initializers.zeros),
             Reshape([OUT_STEPS, n_features])
         ])
+
 
 def get_simple_rnn_model(OUT_STEPS, n_features):
     if OUT_STEPS == 1:
@@ -127,13 +133,14 @@ def get_simple_rnn_model(OUT_STEPS, n_features):
             Dense(OUT_STEPS*n_features),
             Reshape([OUT_STEPS, n_features])
         ])
+
+
 def get_simple_lstm_model(OUT_STEPS, n_features):
     if OUT_STEPS == 1:
         return tf.keras.Sequential([
             LSTM(n_features, return_state=False),
             Dropout(0.2),
             Dense(128, activation="relu"),
-            Dense(n_features, activation="relu"),
         ])
     else:
         return tf.keras.Sequential([
@@ -143,20 +150,22 @@ def get_simple_lstm_model(OUT_STEPS, n_features):
             Dense(OUT_STEPS*n_features, activation="relu"),
             Reshape([OUT_STEPS, n_features])
         ])
-    
+
+
 def get_feedback(OUT_STEPS, n_features):
-    return FeedBack(units=128, out_steps=OUT_STEPS, n_features=n_features)
+    return FeedBack(units=n_features, steps=OUT_STEPS, n_features=n_features)
+
 
 class FeedBack(tf.keras.Model):
-    def __init__(self, units, out_steps, n_features):
+    def __init__(self, units, steps, n_features):
         super().__init__()
-        self.out_steps = out_steps
+        self.steps = steps
         self.n_features = n_features
         self.units = units
         self.lstm_cell = tf.keras.layers.LSTMCell(units)
         # Also wrap the LSTMCell in an RNN to simplify the `warmup` method.
         self.lstm_rnn = RNN(self.lstm_cell, return_state=True)
-        self.dense = Dense(n_features, activation="relu" )
+        self.dense = Dense(n_features, activation="relu")
 
     def warmup(self, inputs):
         # inputs.shape => (batch, time, features)
@@ -169,7 +178,6 @@ class FeedBack(tf.keras.Model):
 
     def call(self, inputs, training=None):
         # Use a TensorArray to capture dynamically unrolled outputs.
-        # predictions = tf.TensorArray(tf.float64, size=(self.out_steps, self.n_features))
         predictions = []
 
         # Initialize the lstm state
@@ -179,10 +187,11 @@ class FeedBack(tf.keras.Model):
         predictions.append(prediction)
 
         # Run the rest of the prediction steps
-        for n in range(1, self.out_steps):
+        for n in range(1, self.steps):
             # Use the last prediction as input.
             x = prediction
             x_ = tf.concat([x, inputs[:,-1,-3:]], 1)
+
             # Execute one lstm step.
             x, state = self.lstm_cell(x_, states=state,
                                     training=training)
