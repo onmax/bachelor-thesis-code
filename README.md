@@ -38,5 +38,5 @@ This project depends mainly on:
 - Pandas and Numpy as data structures libraries
 - Matplotlib for plotting with SciencePlot theme
 
-
+----------
 #### This project has been my bachelor's thesis.
