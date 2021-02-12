@@ -40,3 +40,5 @@ This project depends mainly on:
 
 ----------
 #### This project has been my bachelor's thesis.
+
+The paper written for this paper can be seen at: [onmax/bachelor-thesis-paper](https://github.com/onmax/bachelor-thesis-paper).
